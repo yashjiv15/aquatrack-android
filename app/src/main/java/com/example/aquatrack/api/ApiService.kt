@@ -48,6 +48,32 @@ data class CreateProductionResponse(
     val is_deleted: Boolean?,
     val order: Order?
 )
+data class StockTotalResponse(
+    val product_id: Int,
+    val total_stock: Int
+)
+data class CreateDispatchRequest(
+    val product_id: Int,
+    val dispatch_quantity: Int,
+    val created_at: String
+)
+data class CreateDispatchResponse(
+    val dispatch_id: Int?,
+    val product_id: Int?,
+    val dispatch_quantity: Int?,
+    val created_at: String?
+)
+data class CreateStockRequest(
+    val product_id: Int,
+    val stock_quantity: Int,
+    val created_at: String
+)
+data class CreateStockResponse(
+    val stock_id: Int?,
+    val product_id: Int?,
+    val stock_quantity: Int?,
+    val created_at: String?
+)
 
 // API Service
 interface ApiService {
@@ -66,4 +92,20 @@ interface ApiService {
 
     @GET("productions/recent")
     fun getRecentProductions(): Call<List<CreateProductionResponse>>
+
+    @GET("products")
+    fun getProducts(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 100,
+        @Query("include_deleted") includeDeleted: Boolean = false
+    ): Call<List<Product>>
+
+    @GET("stocks/total")
+    fun getStockTotal(@Query("product_id") productId: Int): Call<StockTotalResponse>
+
+    @POST("dispatches")
+    fun createDispatch(@Body request: CreateDispatchRequest): Call<CreateDispatchResponse>
+
+    @POST("stocks")
+    fun createStock(@Body request: CreateStockRequest): Call<CreateStockResponse>
 }

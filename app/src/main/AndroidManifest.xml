@@ -24,6 +24,8 @@
         </activity>
         <activity android:name=".ProductionActivity"
             android:exported="false" />
+        <activity android:name=".StockActivity"
+            android:exported="false" />
 
     </application>
 
