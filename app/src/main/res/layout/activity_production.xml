@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeColor="@color/blue_primary"
+            app:strokeWidth="1dp"
+            app:cardBackgroundColor="@color/white">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="18dp">
+
+                <!-- Select Order -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Order"
+                    android:textColor="@color/blue_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingBottom="4dp"/>
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:paddingBottom="12dp">
+
+                    <Spinner
+                        android:id="@+id/spinnerOrder"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/spinner_whiteborder"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="12dp"/>
+
+                    <ImageButton
+                        android:id="@+id/buttonRefreshOrders"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_refresh_blue"
+                        android:contentDescription="Refresh Orders"
+                        app:tint="@color/blue_primary"
+                        android:padding="8dp"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/textOrderDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Order details will appear here."
+                    android:textColor="@color/blue_dark"
+                    android:textSize="16sp"
+                    android:paddingBottom="16dp"
+                    android:fontFamily="sans-serif"/>
+
+                <!-- Produced Quantity -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Produced Quantity"
+                    android:textColor="@color/blue_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingBottom="4dp"/>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter produced quantity"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/blue_primary"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxBackgroundColor="@color/white"
+                    android:layout_marginBottom="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextProducedQuantity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:textColorHint="@color/blue_grey"
+                        android:textColor="@color/blue_dark"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Select Date (vertical stack) -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select Date"
+                    android:textColor="@color/blue_primary"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingBottom="4dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonSelectDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="Choose Date"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/blue_button"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    app:elevation="2dp"
+                    app:icon="@android:drawable/ic_menu_my_calendar"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    android:layout_marginBottom="2dp"/>
+
+                <TextView
+                    android:id="@+id/textSelectedDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No date selected"
+                    android:textColor="@color/blue_primary"
+                    android:textSize="16sp"
+                    android:paddingLeft="2dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="12dp"
+                    android:fontFamily="sans-serif"/>
+
+                <!-- Submit Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonSubmitProduction"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:text="Submit Production"
+                    app:cornerRadius="12dp"
+                    app:backgroundTint="@color/blue_primary"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    app:elevation="4dp"
+                    android:layout_marginBottom="20dp"
+                    android:fontFamily="sans-serif-medium"/>
+
+                <!-- Production History -->
+                <TextView
+                    android:id="@+id/textProductionHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Production History (Last 15 Days)"
+                    android:textStyle="bold"
+                    android:textSize="20sp"
+                    android:textColor="@color/blue_primary"
+                    android:paddingTop="12dp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <LinearLayout
+                    android:id="@+id/layoutProductionHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@android:color/transparent"
+                    android:paddingTop="8dp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</ScrollView>
