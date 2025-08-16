@@ -74,6 +74,10 @@ data class CreateStockResponse(
     val stock_quantity: Int?,
     val created_at: String?
 )
+data class DispatchTotalResponse(
+    val product_id: Int,
+    val total_dispatched: Int
+)
 
 // API Service
 interface ApiService {
@@ -108,4 +112,7 @@ interface ApiService {
 
     @POST("stocks")
     fun createStock(@Body request: CreateStockRequest): Call<CreateStockResponse>
+
+    @GET("dispatches/total")
+    fun getDispatchTotal(@Query("product_id") productId: Int): Call<DispatchTotalResponse>
 }
