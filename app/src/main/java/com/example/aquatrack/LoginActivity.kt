@@ -57,6 +57,11 @@ class LoginActivity : AppCompatActivity() {
                             intent.putExtra("access_token", loginResponse.access_token)
                             startActivity(intent)
                             finish()
+                        } else if (loginResponse.user_role == "tester") {
+                            val intent = Intent(this@LoginActivity, TesterActivity::class.java)
+                            intent.putExtra("access_token", loginResponse.access_token)
+                            startActivity(intent)
+                            finish()
                         } else {
                             Toast.makeText(this@LoginActivity, "Unauthorized role", Toast.LENGTH_SHORT).show()
                         }

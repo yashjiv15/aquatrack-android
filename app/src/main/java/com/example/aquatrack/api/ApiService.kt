@@ -19,7 +19,13 @@ data class Product(
     val product_id: Int,
     val product_name: String,
     val quantity_type_id: Int,
-    val quantity_type: String
+    val quantity_type: String,
+    val created_at: String?,
+    val created_by: Int?,
+    val updated_at: String?,
+    val updated_by: Int?,
+    val is_deleted: Boolean?,
+    val is_active: Boolean? // Add is_active if needed
 )
 data class Order(
     val product_id: Int,
@@ -78,6 +84,30 @@ data class DispatchTotalResponse(
     val product_id: Int,
     val total_dispatched: Int
 )
+data class CreateTestingRequest(
+    val product_id: Int,
+    val testing_quantity: Int,
+    val status: String
+)
+data class CreateTestingResponse(
+    val testing_id: Int?,
+    val product_id: Int?,
+    val testing_quantity: Int?,
+    val status: String?,
+    val created_at: String?
+)
+data class TestingHistoryItem(
+    val testing_id: Int,
+    val product_id: Int,
+    val testing_quantity: Int,
+    val status: String,
+    val created_by: Int?,
+    val created_at: String?,
+    val updated_at: String?,
+    val updated_by: Int?,
+    val is_deleted: Boolean?,
+    val product: Product
+)
 
 // API Service
 interface ApiService {
@@ -115,4 +145,10 @@ interface ApiService {
 
     @GET("dispatches/total")
     fun getDispatchTotal(@Query("product_id") productId: Int): Call<DispatchTotalResponse>
+
+    @POST("testing")
+    fun createTesting(@Body request: CreateTestingRequest): Call<CreateTestingResponse>
+
+    @GET("testing/recent")
+    fun getRecentTesting(): Call<List<TestingHistoryItem>>
 }

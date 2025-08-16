@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/blue_primary"
-        app:title="Aquatrack"
+        app:title="Aquatrack - Stock"
         app:titleTextColor="@color/white"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
