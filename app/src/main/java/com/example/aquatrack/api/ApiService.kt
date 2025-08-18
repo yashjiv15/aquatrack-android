@@ -108,6 +108,53 @@ data class TestingHistoryItem(
     val is_deleted: Boolean?,
     val product: Product
 )
+data class TotalSalesResponse(
+    val total_sales: Double
+)
+data class TotalExpensesResponse(
+    val total_expenses: Double
+)
+data class CreateSaleRequest(
+    val product_id: Int,
+    val sale_quantity: Int,
+    val product_purchase_amount: Double,
+    val product_sale_amount: Double,
+    val created_at: String
+)
+data class CreateSaleResponse(
+    val sale_id: Int?,
+    val product_id: Int?,
+    val sale_quantity: Int?,
+    val product_purchase_amount: Double?,
+    val product_sale_amount: Double?,
+    val created_at: String?
+)
+data class CreateExpenseRequest(
+    val description: String,
+    val amount: Double,
+    val created_at: String
+)
+data class CreateExpenseResponse(
+    val expense_id: Int?,
+    val description: String?,
+    val amount: Double?,
+    val created_at: String?
+)
+data class RecentExpenseItem(
+    val expense_id: Int,
+    val description: String,
+    val amount: Double,
+    val created_at: String?
+)
+data class RecentSaleItem(
+    val sale_id: Int,
+    val product_id: Int,
+    val sale_quantity: Int,
+    val product_purchase_amount: Double,
+    val product_sale_amount: Double,
+    val created_at: String?,
+    val product: Product? // Added nullable product for details
+)
 
 // API Service
 interface ApiService {
@@ -151,4 +198,22 @@ interface ApiService {
 
     @GET("testing/recent")
     fun getRecentTesting(): Call<List<TestingHistoryItem>>
+
+    @GET("sales/total")
+    fun getTotalSales(): Call<TotalSalesResponse>
+
+    @GET("expenses/total")
+    fun getTotalExpenses(): Call<TotalExpensesResponse>
+
+    @POST("sales")
+    fun createSale(@Body request: CreateSaleRequest): Call<CreateSaleResponse>
+
+    @POST("expenses")
+    fun createExpense(@Body request: CreateExpenseRequest): Call<CreateExpenseResponse>
+
+    @GET("expenses/recent")
+    fun getRecentExpenses(): Call<List<RecentExpenseItem>>
+
+    @GET("sales/recent")
+    fun getRecentSales(): Call<List<RecentSaleItem>>
 }

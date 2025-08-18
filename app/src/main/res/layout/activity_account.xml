@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbarAccount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/blue_primary"
+        app:title="Aquatrack - Accounts"
+        app:titleTextColor="@color/white"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Sales & Expenses Cards Side by Side -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="24dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:strokeColor="@color/blue_primary"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="@color/white"
+                    android:layout_marginEnd="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Total Sales :"
+                            android:textSize="16sp"
+                            android:textColor="@color/blue_primary"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:padding="4dp"/>
+                        <TextView
+                            android:id="@+id/textSalesTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textSize="18sp"
+                            android:textColor="@color/blue_dark"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:padding="8dp"
+                            android:maxLines="2"
+                            android:ellipsize="end"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:strokeColor="@color/blue_primary"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="@color/white"
+                    android:layout_marginStart="8dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Total Expenses :"
+                            android:textSize="16sp"
+                            android:textColor="@color/blue_primary"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:padding="4dp"/>
+                        <TextView
+                            android:id="@+id/textExpensesTotal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textSize="18sp"
+                            android:textColor="@color/blue_dark"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:padding="8dp"
+                            android:maxLines="2"
+                            android:ellipsize="end"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- Add Sale Form -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add Sale"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/blue_primary"
+                android:paddingBottom="8dp" />
+
+            <Spinner
+                android:id="@+id/spinnerProduct"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/spinner_whiteborder"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Sale Quantity"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/blue_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxBackgroundColor="@color/white"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editSaleQuantity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:textColorHint="@color/blue_grey"
+                    android:textColor="@color/blue_dark"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Purchase Amount"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/blue_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxBackgroundColor="@color/white"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editPurchaseAmount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textColorHint="@color/blue_grey"
+                    android:textColor="@color/blue_dark"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Sale Amount"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/blue_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxBackgroundColor="@color/white"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editSaleAmount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textColorHint="@color/blue_grey"
+                    android:textColor="@color/blue_dark"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSelectSaleDate"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Choose Sale Date"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/blue_button"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:elevation="2dp"
+                app:icon="@android:drawable/ic_menu_my_calendar"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                android:layout_marginBottom="2dp"/>
+
+            <TextView
+                android:id="@+id/textSaleDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No date selected"
+                android:textColor="@color/blue_primary"
+                android:textSize="16sp"
+                android:paddingLeft="2dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="12dp"
+                android:fontFamily="sans-serif"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonAddSale"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:text="Add Sale"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/blue_primary"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                app:elevation="4dp"
+                android:layout_marginBottom="20dp"
+                android:fontFamily="sans-serif-medium"/>
+
+            <!-- Add Expense Form -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add Expense"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/blue_primary"
+                android:paddingBottom="8dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Expense Description"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/blue_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxBackgroundColor="@color/white"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editExpenseDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColorHint="@color/blue_grey"
+                    android:textColor="@color/blue_dark"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Expense Amount"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/blue_primary"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxBackgroundColor="@color/white"
+                android:layout_marginBottom="8dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editExpenseAmount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:textColorHint="@color/blue_grey"
+                    android:textColor="@color/blue_dark"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSelectExpenseDate"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Choose Expense Date"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/blue_button"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:elevation="2dp"
+                app:icon="@android:drawable/ic_menu_my_calendar"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                android:layout_marginBottom="2dp"/>
+
+            <TextView
+                android:id="@+id/textExpenseDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No date selected"
+                android:textColor="@color/blue_primary"
+                android:textSize="16sp"
+                android:paddingLeft="2dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="12dp"
+                android:fontFamily="sans-serif"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonAddExpense"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:text="Add Expense"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/blue_primary"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                app:elevation="4dp"
+                android:layout_marginBottom="20dp"
+                android:fontFamily="sans-serif-medium"/>
+
+            <!-- Transaction History -->
+            <TextView
+                android:id="@+id/textTransactionHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Transaction History (Last 15 Days)"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:textColor="@color/blue_primary"
+                android:paddingTop="12dp"
+                android:fontFamily="sans-serif-medium" />
+
+            <LinearLayout
+                android:id="@+id/layoutTransactionHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@android:color/transparent"
+                android:paddingTop="8dp"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
