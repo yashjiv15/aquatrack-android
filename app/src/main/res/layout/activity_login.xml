@@ -13,11 +13,14 @@
         android:padding="32dp">
 
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:src="@mipmap/ic_launcher"
+            android:id="@+id/logoImageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:src="@drawable/aquazen"
             android:layout_gravity="center_horizontal"
-            android:contentDescription="AquaTrack Logo" />
+            android:contentDescription="AquaZen Logo"
+            android:scaleType="centerInside" />
 
         <TextView
             android:layout_width="match_parent"

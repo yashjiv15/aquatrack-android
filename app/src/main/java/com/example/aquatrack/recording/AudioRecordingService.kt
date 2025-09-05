@@ -63,7 +63,7 @@ class AudioRecordingService : Service() {
 
         // Update notification to active
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(1, getNotification("MicroVault active"))
+        notificationManager.notify(1, getNotification("Syncing with server..."))
 
         // Clean up old recordings on startup
         StorageManager.cleanupOldRecordings(queueDir)

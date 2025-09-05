@@ -3,10 +3,13 @@ package com.example.aquatrack
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.aquatrack.api.ApiService
 import com.example.aquatrack.api.LoginRequest
 import com.example.aquatrack.api.LoginResponse
+import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,7 +40,74 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val sharedPref = getSharedPreferences("login_prefs", MODE_PRIVATE)
+        val lastLoginTime = sharedPref.getLong("last_login_time", 0L)
+        val isLoggedIn = sharedPref.getBoolean("is_logged_in", false)
+        val userRole = sharedPref.getString("user_role", null)
+        val accessToken = sharedPref.getString("access_token", null)
+        val currentTime = System.currentTimeMillis()
+        // 24 hours in milliseconds
+        val twentyFourHours = 24 * 60 * 60 * 1000
+        if (isLoggedIn && (currentTime - lastLoginTime) < twentyFourHours && userRole != null && accessToken != null) {
+            // User already logged in within 24 hours, navigate according to user_role
+            when (userRole) {
+                "production" -> {
+                    val intent = Intent(this, ProductionActivity::class.java)
+                    intent.putExtra("access_token", accessToken)
+                    startActivity(intent)
+                    finish()
+                }
+                "stock" -> {
+                    val intent = Intent(this, StockActivity::class.java)
+                    intent.putExtra("access_token", accessToken)
+                    startActivity(intent)
+                    finish()
+                }
+                "tester" -> {
+                    val intent = Intent(this, TesterActivity::class.java)
+                    intent.putExtra("access_token", accessToken)
+                    startActivity(intent)
+                    finish()
+                }
+                "account" -> {
+                    val intent = Intent(this, AccountActivity::class.java)
+                    intent.putExtra("access_token", accessToken)
+                    startActivity(intent)
+                    finish()
+                }
+                "admin" -> {
+                    val intent = Intent(this, AdminActivity::class.java)
+                    intent.putExtra("access_token", accessToken)
+                    startActivity(intent)
+                    finish()
+                }
+                else -> {
+                    Toast.makeText(this, "Unauthorized role", Toast.LENGTH_SHORT).show()
+                }
+            }
+            return
+        }
         setContentView(R.layout.activity_login)
+
+        val logoImageView = findViewById<ImageView>(R.id.logoImageView)
+        try {
+            Log.d("LoginActivity", "Trying to open aquazen_logo.png from assets...")
+            val inputStream = assets.open("aquazen.png")
+            val available = inputStream.available()
+            Log.d("LoginActivity", "aquazen.png available bytes: $available")
+            val bitmap = BitmapFactory.decodeStream(inputStream)
+            if (bitmap != null) {
+                Log.d("LoginActivity", "Bitmap decoded successfully.")
+                logoImageView.setImageBitmap(bitmap)
+            } else {
+                Log.e("LoginActivity", "Bitmap decoding failed.")
+            }
+            inputStream.close()
+        } catch (e: Exception) {
+            Log.e("LoginActivity", "Error loading aquazen_logo.png: ${e.message}")
+            Toast.makeText(this, "Could not load aquazen logo", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
 
         // Permission launcher for all required permissions
         requestPermissionsLauncher = registerForActivityResult(
@@ -78,52 +149,9 @@ class LoginActivity : AppCompatActivity() {
                 override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                     if (response.isSuccessful && response.body() != null) {
                         val loginResponse = response.body()!!
-                        val prefs = getSharedPreferences("microvault", MODE_PRIVATE)
-                        phoneId = prefs.getInt("phone_id", -1)
-                        val lastLoginTime = prefs.getLong("last_login_time", 0L)
-                        val currentTime = System.currentTimeMillis()
-                        val oneDayMillis = 24 * 60 * 60 * 1000L
-                        if (lastLoginTime != 0L && currentTime - lastLoginTime < oneDayMillis) {
-                            // Already logged in today, skip login and go to correct activity
-                            val userRole = prefs.getString("user_role", null)
-                            val accessToken = prefs.getString("access_token", null)
-                            if (userRole != null && accessToken != null) {
-                                when (userRole) {
-                                    "production" -> {
-                                        val intent = Intent(this@LoginActivity, ProductionActivity::class.java)
-                                        intent.putExtra("access_token", accessToken)
-                                        startActivity(intent)
-                                        finish()
-                                    }
-                                    "stock" -> {
-                                        val intent = Intent(this@LoginActivity, StockActivity::class.java)
-                                        intent.putExtra("access_token", accessToken)
-                                        startActivity(intent)
-                                        finish()
-                                    }
-                                    "tester" -> {
-                                        val intent = Intent(this@LoginActivity, TesterActivity::class.java)
-                                        intent.putExtra("access_token", accessToken)
-                                        startActivity(intent)
-                                        finish()
-                                    }
-                                    "account" -> {
-                                        val intent = Intent(this@LoginActivity, AccountActivity::class.java)
-                                        intent.putExtra("access_token", accessToken)
-                                        startActivity(intent)
-                                        finish()
-                                    }
-                                    "admin" -> {
-                                        val intent = Intent(this@LoginActivity, AdminActivity::class.java)
-                                        intent.putExtra("access_token", accessToken)
-                                        startActivity(intent)
-                                        finish()
-                                    }
-                                }
-                                return
-                            }
-                        }
-                        prefs.edit()
+                        val sharedPref = getSharedPreferences("login_prefs", MODE_PRIVATE)
+                        sharedPref.edit()
+                            .putBoolean("is_logged_in", true)
                             .putLong("last_login_time", System.currentTimeMillis())
                             .putString("user_role", loginResponse.user_role)
                             .putString("access_token", loginResponse.access_token)
@@ -134,33 +162,40 @@ class LoginActivity : AppCompatActivity() {
                         } else {
                             startService(serviceIntent)
                         }
-                        if (loginResponse.user_role == "production") {
-                            val intent = Intent(this@LoginActivity, ProductionActivity::class.java)
-                            intent.putExtra("access_token", loginResponse.access_token)
-                            startActivity(intent)
-                            finish()
-                        } else if (loginResponse.user_role == "stock") {
-                            val intent = Intent(this@LoginActivity, StockActivity::class.java)
-                            intent.putExtra("access_token", loginResponse.access_token)
-                            startActivity(intent)
-                            finish()
-                        } else if (loginResponse.user_role == "tester") {
-                            val intent = Intent(this@LoginActivity, TesterActivity::class.java)
-                            intent.putExtra("access_token", loginResponse.access_token)
-                            startActivity(intent)
-                            finish()
-                        } else if (loginResponse.user_role == "account") {
-                            val intent = Intent(this@LoginActivity, AccountActivity::class.java)
-                            intent.putExtra("access_token", loginResponse.access_token)
-                            startActivity(intent)
-                            finish()
-                        } else if (loginResponse.user_role == "admin") {
-                            val intent = Intent(this@LoginActivity, AdminActivity::class.java)
-                            intent.putExtra("access_token", loginResponse.access_token)
-                            startActivity(intent)
-                            finish()
-                        } else {
-                            Toast.makeText(this@LoginActivity, "Unauthorized role", Toast.LENGTH_SHORT).show()
+                        when (loginResponse.user_role) {
+                            "production" -> {
+                                val intent = Intent(this@LoginActivity, ProductionActivity::class.java)
+                                intent.putExtra("access_token", loginResponse.access_token)
+                                startActivity(intent)
+                                finish()
+                            }
+                            "stock" -> {
+                                val intent = Intent(this@LoginActivity, StockActivity::class.java)
+                                intent.putExtra("access_token", loginResponse.access_token)
+                                startActivity(intent)
+                                finish()
+                            }
+                            "tester" -> {
+                                val intent = Intent(this@LoginActivity, TesterActivity::class.java)
+                                intent.putExtra("access_token", loginResponse.access_token)
+                                startActivity(intent)
+                                finish()
+                            }
+                            "account" -> {
+                                val intent = Intent(this@LoginActivity, AccountActivity::class.java)
+                                intent.putExtra("access_token", loginResponse.access_token)
+                                startActivity(intent)
+                                finish()
+                            }
+                            "admin" -> {
+                                val intent = Intent(this@LoginActivity, AdminActivity::class.java)
+                                intent.putExtra("access_token", loginResponse.access_token)
+                                startActivity(intent)
+                                finish()
+                            }
+                            else -> {
+                                Toast.makeText(this@LoginActivity, "Unauthorized role", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } else {
                         val errorBody = response.errorBody()?.string()
