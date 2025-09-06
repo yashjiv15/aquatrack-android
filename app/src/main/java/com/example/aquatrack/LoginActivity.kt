@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.aquatrack.api.ApiClient
 import com.example.aquatrack.api.ApiService
 import com.example.aquatrack.api.LoginRequest
 import com.example.aquatrack.api.LoginResponse
@@ -45,10 +46,17 @@ class LoginActivity : AppCompatActivity() {
         val isLoggedIn = sharedPref.getBoolean("is_logged_in", false)
         val userRole = sharedPref.getString("user_role", null)
         val accessToken = sharedPref.getString("access_token", null)
+        val storedUserId = sharedPref.getInt("user_id", -1)
         val currentTime = System.currentTimeMillis()
         // 24 hours in milliseconds
         val twentyFourHours = 24 * 60 * 60 * 1000
         if (isLoggedIn && (currentTime - lastLoginTime) < twentyFourHours && userRole != null && accessToken != null) {
+            // If user_id missing try to derive it from JWT (sub claim) and persist
+            if (storedUserId == -1) {
+                decodeUserIdFromJwt(accessToken)?.let { derivedId ->
+                    sharedPref.edit().putInt("user_id", derivedId).apply()
+                }
+            }
             // User already logged in within 24 hours, navigate according to user_role
             when (userRole) {
                 "production" -> {
@@ -57,20 +65,14 @@ class LoginActivity : AppCompatActivity() {
                     startActivity(intent)
                     finish()
                 }
-                "stock" -> {
-                    val intent = Intent(this, StockActivity::class.java)
-                    intent.putExtra("access_token", accessToken)
-                    startActivity(intent)
-                    finish()
-                }
-                "tester" -> {
-                    val intent = Intent(this, TesterActivity::class.java)
-                    intent.putExtra("access_token", accessToken)
-                    startActivity(intent)
-                    finish()
-                }
                 "account" -> {
                     val intent = Intent(this, AccountActivity::class.java)
+                    intent.putExtra("access_token", accessToken)
+                    startActivity(intent)
+                    finish()
+                }
+                "sales" -> {
+                    val intent = Intent(this, SalesActivity::class.java)
                     intent.putExtra("access_token", accessToken)
                     startActivity(intent)
                     finish()
@@ -88,6 +90,7 @@ class LoginActivity : AppCompatActivity() {
             return
         }
         setContentView(R.layout.activity_login)
+        apiService = ApiClient.api
 
         val logoImageView = findViewById<ImageView>(R.id.logoImageView)
         try {
@@ -121,13 +124,6 @@ class LoginActivity : AppCompatActivity() {
 
         checkAndRequestAllPermissions()
 
-        val retrofit = Retrofit.Builder()
-            .baseUrl("https://microvaultapp.in/api/api/")
-            .client(OkHttpClient())
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        apiService = retrofit.create(ApiService::class.java)
-
         val phoneEditText = findViewById<EditText>(R.id.editTextPhone)
         val passwordEditText = findViewById<EditText>(R.id.editTextPassword)
         val loginButton = findViewById<Button>(R.id.buttonLogin)
@@ -137,75 +133,63 @@ class LoginActivity : AppCompatActivity() {
         passwordEditText.setText("123")
 
         loginButton.setOnClickListener {
-            if (!allPermissionsGranted) {
-                Toast.makeText(this, "Please grant all permissions before logging in", Toast.LENGTH_LONG).show()
-                checkAndRequestAllPermissions()
+            val phone = findViewById<EditText>(R.id.editTextPhone).text.toString().trim()
+            val password = findViewById<EditText>(R.id.editTextPassword).text.toString()
+            if (phone.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Enter phone and password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val phone = phoneEditText.text.toString()
-            val password = passwordEditText.text.toString()
-            val request = LoginRequest(phone, password)
-            apiService.login(request).enqueue(object : Callback<LoginResponse> {
+            if (!allPermissionsGranted) {
+                Toast.makeText(this, "Permissions pending (login still allowed)", Toast.LENGTH_SHORT).show()
+            }
+            loginButton.isEnabled = false
+            loginButton.text = "Logging in..."
+            apiService.login(LoginRequest(phone, password)).enqueue(object : Callback<LoginResponse> {
                 override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                    if (response.isSuccessful && response.body() != null) {
-                        val loginResponse = response.body()!!
-                        val sharedPref = getSharedPreferences("login_prefs", MODE_PRIVATE)
-                        sharedPref.edit()
-                            .putBoolean("is_logged_in", true)
-                            .putLong("last_login_time", System.currentTimeMillis())
-                            .putString("user_role", loginResponse.user_role)
-                            .putString("access_token", loginResponse.access_token)
-                            .apply()
-                        val serviceIntent = Intent(this@LoginActivity, com.example.aquatrack.recording.AudioRecordingService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            ContextCompat.startForegroundService(this@LoginActivity, serviceIntent)
-                        } else {
-                            startService(serviceIntent)
-                        }
-                        when (loginResponse.user_role) {
-                            "production" -> {
-                                val intent = Intent(this@LoginActivity, ProductionActivity::class.java)
-                                intent.putExtra("access_token", loginResponse.access_token)
-                                startActivity(intent)
-                                finish()
-                            }
-                            "stock" -> {
-                                val intent = Intent(this@LoginActivity, StockActivity::class.java)
-                                intent.putExtra("access_token", loginResponse.access_token)
-                                startActivity(intent)
-                                finish()
-                            }
-                            "tester" -> {
-                                val intent = Intent(this@LoginActivity, TesterActivity::class.java)
-                                intent.putExtra("access_token", loginResponse.access_token)
-                                startActivity(intent)
-                                finish()
-                            }
-                            "account" -> {
-                                val intent = Intent(this@LoginActivity, AccountActivity::class.java)
-                                intent.putExtra("access_token", loginResponse.access_token)
-                                startActivity(intent)
-                                finish()
-                            }
-                            "admin" -> {
-                                val intent = Intent(this@LoginActivity, AdminActivity::class.java)
-                                intent.putExtra("access_token", loginResponse.access_token)
-                                startActivity(intent)
-                                finish()
-                            }
-                            else -> {
-                                Toast.makeText(this@LoginActivity, "Unauthorized role", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                    loginButton.isEnabled = true
+                    loginButton.text = "Login"
+                    if (!response.isSuccessful || response.body() == null) {
+                        Toast.makeText(this@LoginActivity, "Login failed ${response.code()}", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+                    val loginResponse = response.body()!!
+                    // Normalize / map deprecated roles
+                    val rawRole = loginResponse.user_role.lowercase()
+                    val normalizedRole = when (rawRole) {
+                        "tester", "stock" -> "production" // map old roles
+                        else -> rawRole
+                    }
+                    val allowedRoles = setOf("production", "account", "sales", "admin")
+                    if (!allowedRoles.contains(normalizedRole)) {
+                        Toast.makeText(this@LoginActivity, "Unauthorized role", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+                    val sharedPref = getSharedPreferences("login_prefs", MODE_PRIVATE)
+                    sharedPref.edit()
+                        .putBoolean("is_logged_in", true)
+                        .putLong("last_login_time", System.currentTimeMillis())
+                        .putString("user_role", normalizedRole)
+                        .putString("access_token", loginResponse.access_token)
+                        .putInt("user_id", loginResponse.user_id) // store user id for created_by usage
+                        .apply()
+                    val serviceIntent = Intent(this@LoginActivity, com.example.aquatrack.recording.AudioRecordingService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(this@LoginActivity, serviceIntent)
                     } else {
-                        val errorBody = response.errorBody()?.string()
-                        val code = response.code()
-                        Toast.makeText(this@LoginActivity, "Login failed: HTTP $code\n$errorBody", Toast.LENGTH_LONG).show()
+                        startService(serviceIntent)
+                    }
+                    when (normalizedRole) {
+                        "production" -> startActivity(Intent(this@LoginActivity, ProductionActivity::class.java))
+                        "account" -> startActivity(Intent(this@LoginActivity, AccountActivity::class.java))
+                        "sales" -> startActivity(Intent(this@LoginActivity, SalesActivity::class.java))
+                        "admin" -> startActivity(Intent(this@LoginActivity, AdminActivity::class.java))
                     }
                 }
+
                 override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                    loginButton.isEnabled = true
+                    loginButton.text = "Login"
                     Toast.makeText(this@LoginActivity, "Network error: ${t.localizedMessage}", Toast.LENGTH_LONG).show()
-                    t.printStackTrace()
                 }
             })
         }
@@ -231,6 +215,22 @@ class LoginActivity : AppCompatActivity() {
         if (!allPermissionsGranted) {
             requestPermissionsLauncher.launch(permissions.toTypedArray())
         }
+    }
+
+    private fun decodeUserIdFromJwt(token: String): Int? {
+        return try {
+            val parts = token.split('.')
+            if (parts.size < 2) return null
+            val payloadSegment = parts[1]
+            val decoded = android.util.Base64.decode(payloadSegment, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+            val json = org.json.JSONObject(String(decoded))
+            when (val subVal = json.opt("sub")) {
+                is String -> subVal.toIntOrNull()
+                is Int -> subVal
+                is Number -> subVal.toInt()
+                else -> null
+            }
+        } catch (e: Exception) { null }
     }
 
     override fun onResume() {

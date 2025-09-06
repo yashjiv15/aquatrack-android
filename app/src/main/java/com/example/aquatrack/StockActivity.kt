@@ -30,17 +30,19 @@ class StockActivity : AppCompatActivity() {
     private var products: List<Product> = emptyList()
     private var selectedDate: String = ""
     private var selectedStockDate: String = ""
+    private var userId: Int = -1
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_stock)
+        userId = getSharedPreferences("login_prefs", MODE_PRIVATE).getInt("user_id", -1)
 
         val toolbar = findViewById<Toolbar>(R.id.toolbarStock)
         setSupportActionBar(toolbar)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://microvaultapp.in/api/api/")
+            .baseUrl("http://192.168.1.7:8000/api/")
             .client(OkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -115,6 +117,7 @@ class StockActivity : AppCompatActivity() {
         }
 
         dispatchButton.setOnClickListener {
+            if (!ensureUserId()) return@setOnClickListener
             val position = productSpinner.selectedItemPosition
             if (position <= 0) {
                 Toast.makeText(this, "Please select a product.", Toast.LENGTH_SHORT).show()
@@ -131,7 +134,7 @@ class StockActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please select a date.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val request = com.example.aquatrack.api.CreateDispatchRequest(product.product_id, quantity, selectedDate)
+            val request = com.example.aquatrack.api.CreateDispatchRequest(order_id = product.product_id, dispatch_quantity = quantity, created_at = selectedDate, created_by = userId)
             apiService.createDispatch(request).enqueue(object : Callback<com.example.aquatrack.api.CreateDispatchResponse> {
                 override fun onResponse(call: Call<com.example.aquatrack.api.CreateDispatchResponse>, response: Response<com.example.aquatrack.api.CreateDispatchResponse>) {
                     if (response.isSuccessful && response.body() != null) {
@@ -256,5 +259,36 @@ class StockActivity : AppCompatActivity() {
                 dispatchCard.visibility = View.VISIBLE
             }
         })
+    }
+
+    private fun ensureUserId(): Boolean {
+        if (userId > 0) return true
+        val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
+        val token = prefs.getString("access_token", null)
+        if (token != null) {
+            try {
+                val parts = token.split('.')
+                if (parts.size >= 2) {
+                    val decoded = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+                    val json = org.json.JSONObject(String(decoded))
+                    val sub = json.opt("sub")
+                    val derived = when (sub) {
+                        is String -> sub.toIntOrNull()
+                        is Int -> sub
+                        is Number -> sub.toInt()
+                        else -> null
+                    }
+                    if (derived != null && derived > 0) {
+                        userId = derived
+                        prefs.edit().putInt("user_id", derived).apply()
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        if (userId <= 0) {
+            Toast.makeText(this, "Missing user id. Please re-login.", Toast.LENGTH_LONG).show()
+            return false
+        }
+        return true
     }
 }

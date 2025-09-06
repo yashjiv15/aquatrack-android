@@ -25,50 +25,59 @@ data class Product(
     val updated_at: String?,
     val updated_by: Int?,
     val is_deleted: Boolean?,
-    val is_active: Boolean? // Add is_active if needed
+    val is_active: Boolean?
 )
 data class Order(
     val product_id: Int,
     val order_quantity: Int,
     val order_id: Int,
     val created_at: String?,
-    val created_by: Int?,
+    val created_by: String?, // changed from Int? to String? to accept name
     val updated_at: String?,
-    val updated_by: Int?,
+    val updated_by: String?, // changed from Int? to String?
     val is_deleted: Boolean?,
-    val product: Product
+    val product: Product,
+    val order_quantity_remaining: Int? // newly added optional remaining qty
 )
+// Updated: production now references product directly
 data class CreateProductionRequest(
-    val order_id: Int,
+    val product_id: Int,
     val produced_quantity: Double,
-    val created_at: String?
+    val created_at: String?,
+    val created_by: Int // mandatory
 )
 data class CreateProductionResponse(
-    val order_id: Int,
-    val produced_quantity: Double,
+    val product_id: Int?,
+    val produced_quantity: Double?,
     val created_at: String?,
     val production_id: Int?,
     val created_by: Int?,
     val updated_at: String?,
     val updated_by: Int?,
     val is_deleted: Boolean?,
-    val order: Order?
+    val order: Order?, // keep for backward compat if backend returns it
+    val product: Product? // also allow direct product object
 )
 data class StockTotalResponse(
     val product_id: Int,
     val total_stock: Int
 )
 data class CreateDispatchRequest(
-    val product_id: Int,
+    val order_id: Int,
     val dispatch_quantity: Int,
-    val created_at: String
+    val created_at: String,
+    val created_by: Int // mandatory
 )
 data class CreateDispatchResponse(
     val dispatch_id: Int?,
     val product_id: Int?,
     val dispatch_quantity: Int?,
-    val created_at: String?
+    val created_at: String?,
+    val product: Product?
 )
+// For listing recent dispatches
+// If backend already returns same shape as CreateDispatchResponse list, we can reuse that.
+
 data class CreateStockRequest(
     val product_id: Int,
     val stock_quantity: Int,
@@ -117,17 +126,16 @@ data class TotalExpensesResponse(
 data class CreateSaleRequest(
     val product_id: Int,
     val sale_quantity: Int,
-    val product_purchase_amount: Double,
-    val product_sale_amount: Double,
+    val sales_amount: Double,
     val created_at: String
 )
 data class CreateSaleResponse(
     val sale_id: Int?,
     val product_id: Int?,
     val sale_quantity: Int?,
-    val product_purchase_amount: Double?,
-    val product_sale_amount: Double?,
-    val created_at: String?
+    val sales_amount: Double?,
+    val created_at: String?,
+    val product: Product? = null
 )
 data class CreateExpenseRequest(
     val description: String,
@@ -150,16 +158,25 @@ data class RecentSaleItem(
     val sale_id: Int,
     val product_id: Int,
     val sale_quantity: Int,
-    val product_purchase_amount: Double,
-    val product_sale_amount: Double,
+    val sales_amount: Double,
     val created_at: String?,
-    val product: Product? // Added nullable product for details
+    val product: Product?
+)
+data class CreateOrderRequest(
+    val product_id: Int,
+    val order_quantity: Int
 )
 
-// API Service
 interface ApiService {
     @POST("auth/login")
     fun login(@Body request: LoginRequest): Call<LoginResponse>
+
+    @GET("orders/pending")
+    fun getPendingOrders(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 100,
+        @Query("include_deleted") includeDeleted: Boolean = false
+    ): Call<List<Order>>
 
     @GET("orders")
     fun getOrders(
@@ -186,6 +203,9 @@ interface ApiService {
 
     @POST("dispatches")
     fun createDispatch(@Body request: CreateDispatchRequest): Call<CreateDispatchResponse>
+
+    @GET("dispatches/recent")
+    fun getRecentDispatches(): Call<List<CreateDispatchResponse>>
 
     @POST("stocks")
     fun createStock(@Body request: CreateStockRequest): Call<CreateStockResponse>
@@ -216,4 +236,14 @@ interface ApiService {
 
     @GET("sales/recent")
     fun getRecentSales(): Call<List<RecentSaleItem>>
+
+    @GET("sales")
+    fun getSales(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 100,
+        @Query("include_deleted") includeDeleted: Boolean = false
+    ): Call<List<RecentSaleItem>>
+
+    @POST("orders")
+    fun createOrder(@Body request: CreateOrderRequest): Call<Order>
 }

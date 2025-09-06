@@ -13,15 +13,11 @@ class AdminActivity : AppCompatActivity() {
         findViewById<Button>(R.id.buttonProduction).setOnClickListener {
             startActivity(Intent(this, ProductionActivity::class.java))
         }
-        findViewById<Button>(R.id.buttonStock).setOnClickListener {
-            startActivity(Intent(this, StockActivity::class.java))
-        }
-        findViewById<Button>(R.id.buttonTester).setOnClickListener {
-            startActivity(Intent(this, TesterActivity::class.java))
+        findViewById<Button>(R.id.buttonSales).setOnClickListener {
+            startActivity(Intent(this, SalesActivity::class.java))
         }
         findViewById<Button>(R.id.buttonAccount).setOnClickListener {
             startActivity(Intent(this, AccountActivity::class.java))
         }
     }
 }
-

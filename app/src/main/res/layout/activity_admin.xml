@@ -13,16 +13,10 @@
         android:text="Production" />
 
     <Button
-        android:id="@+id/buttonStock"
+        android:id="@+id/buttonSales"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Stock" />
-
-    <Button
-        android:id="@+id/buttonTester"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Tester" />
+        android:text="Sales" />
 
     <Button
         android:id="@+id/buttonAccount"
@@ -31,4 +25,3 @@
         android:text="Account" />
 
 </LinearLayout>
-

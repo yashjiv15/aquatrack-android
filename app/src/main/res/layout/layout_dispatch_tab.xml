@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/blue_primary"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@color/white"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Select Order"
+                        android:textColor="@color/blue_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:paddingBottom="4dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingBottom="12dp">
+
+                        <Spinner
+                            android:id="@+id/spinnerOrder"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/spinner_whiteborder"
+                            android:paddingLeft="12dp"
+                            android:paddingRight="12dp" />
+
+                        <ImageButton
+                            android:id="@+id/buttonRefreshOrders"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_refresh_blue"
+                            android:contentDescription="Refresh Orders"
+                            app:tint="@color/blue_primary"
+                            android:padding="8dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textOrderDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Order details will appear here."
+                        android:textColor="@color/blue_dark"
+                        android:textSize="15sp"
+                        android:paddingBottom="12dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Dispatch Quantity"
+                        android:textColor="@color/blue_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:paddingBottom="4dp"/>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Enter dispatch quantity"
+                        app:boxBackgroundMode="outline"
+                        app:boxStrokeColor="@color/blue_primary"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxBackgroundColor="@color/white"
+                        android:layout_marginBottom="16dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextDispatchQuantity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:textColorHint="@color/blue_grey"
+                            android:textColor="@color/blue_dark"
+                            android:textSize="16sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Dispatch Date"
+                        android:textColor="@color/blue_primary"
+                        android:textSize="14sp"
+                        android:paddingBottom="4dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonSelectDispatchDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Choose Dispatch Date"
+                        app:cornerRadius="12dp"
+                        app:backgroundTint="@color/blue_button"
+                        android:textColor="@color/white"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="2dp"/>
+
+                    <TextView
+                        android:id="@+id/textSelectedDispatchDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No date selected"
+                        android:textColor="@color/blue_primary"
+                        android:textSize="14sp"
+                        android:paddingBottom="12dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonSubmitDispatch"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Submit Dispatch"
+                        app:cornerRadius="12dp"
+                        app:backgroundTint="@color/blue_primary"
+                        android:textColor="@color/white"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <TextView
+                        android:id="@+id/textDispatchTotal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Dispatch Total: -"
+                        android:textColor="@color/blue_dark"
+                        android:textSize="14sp"
+                        android:paddingBottom="12dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Recent Dispatches"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:textColor="@color/blue_primary"
+                        android:paddingBottom="6dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutDispatchHistory"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingBottom="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
