@@ -129,8 +129,8 @@ class LoginActivity : AppCompatActivity() {
         val loginButton = findViewById<Button>(R.id.buttonLogin)
 
         // Set default values
-        phoneEditText.setText("9834464841")
-        passwordEditText.setText("123")
+        phoneEditText.setText("")
+        passwordEditText.setText("")
 
         loginButton.setOnClickListener {
             val phone = findViewById<EditText>(R.id.editTextPhone).text.toString().trim()
