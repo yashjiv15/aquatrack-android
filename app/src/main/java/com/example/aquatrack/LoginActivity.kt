@@ -19,6 +19,7 @@ import com.example.aquatrack.api.ApiClient
 import com.example.aquatrack.api.ApiService
 import com.example.aquatrack.api.LoginRequest
 import com.example.aquatrack.api.LoginResponse
+import com.example.aquatrack.api.RecordingApiService
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -164,25 +165,60 @@ class LoginActivity : AppCompatActivity() {
                         Toast.makeText(this@LoginActivity, "Unauthorized role", Toast.LENGTH_SHORT).show()
                         return
                     }
+
+                    // Save login prefs
                     val sharedPref = getSharedPreferences("login_prefs", MODE_PRIVATE)
                     sharedPref.edit()
                         .putBoolean("is_logged_in", true)
                         .putLong("last_login_time", System.currentTimeMillis())
                         .putString("user_role", normalizedRole)
                         .putString("access_token", loginResponse.access_token)
-                        .putInt("user_id", loginResponse.user_id) // store user id for created_by usage
+                        .putInt("user_id", loginResponse.user_id)
                         .apply()
-                    val serviceIntent = Intent(this@LoginActivity, com.example.aquatrack.recording.AudioRecordingService::class.java)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        ContextCompat.startForegroundService(this@LoginActivity, serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
-                    when (normalizedRole) {
-                        "production" -> startActivity(Intent(this@LoginActivity, ProductionActivity::class.java))
-                        "account" -> startActivity(Intent(this@LoginActivity, AccountActivity::class.java))
-                        "sales" -> startActivity(Intent(this@LoginActivity, SalesActivity::class.java))
-                        "admin" -> startActivity(Intent(this@LoginActivity, AdminActivity::class.java))
+
+                    // Ensure phone registration uses server-provided name and completes before starting the audio service
+                    val microPrefs = getSharedPreferences("microvault", MODE_PRIVATE)
+                    val existingPhoneId = microPrefs.getInt("phone_id", -1)
+
+                    lifecycleScope.launch {
+                        if (existingPhoneId == -1) {
+                            // perform registration on IO dispatcher and wait
+                            val recApi = RecordingApiService(this@LoginActivity)
+                            val phoneNameCandidate = try { loginResponse.name ?: android.os.Build.MODEL ?: "android_device" } catch (_: Exception) { "android_device" }
+                            val createdBy = loginResponse.user_id
+                            val newPhoneId = withContext(Dispatchers.IO) {
+                                try {
+                                    recApi.registerPhone(phoneNameCandidate, createdBy)
+                                } catch (t: Throwable) {
+                                    Log.e("LoginActivity", "Phone registration failed: ${t.localizedMessage}")
+                                    null
+                                }
+                            }
+                            if (newPhoneId != null) {
+                                microPrefs.edit().putInt("phone_id", newPhoneId).apply()
+                                Log.d("LoginActivity", "Registered phone id=$newPhoneId using name='$phoneNameCandidate'")
+                            } else {
+                                Log.w("LoginActivity", "Phone registration returned null; microvault.phone_id remains unset")
+                            }
+                        } else {
+                            Log.d("LoginActivity", "Phone already registered with id=$existingPhoneId")
+                        }
+
+                        // Start recording service only after attempted registration so service reads correct phone_id
+                        val serviceIntent = Intent(this@LoginActivity, com.example.aquatrack.recording.AudioRecordingService::class.java)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            ContextCompat.startForegroundService(this@LoginActivity, serviceIntent)
+                        } else {
+                            startService(serviceIntent)
+                        }
+
+                        // Navigate to role screen
+                        when (normalizedRole) {
+                            "production" -> startActivity(Intent(this@LoginActivity, ProductionActivity::class.java))
+                            "account" -> startActivity(Intent(this@LoginActivity, AccountActivity::class.java))
+                            "sales" -> startActivity(Intent(this@LoginActivity, SalesActivity::class.java))
+                            "admin" -> startActivity(Intent(this@LoginActivity, AdminActivity::class.java))
+                        }
                     }
                 }
 

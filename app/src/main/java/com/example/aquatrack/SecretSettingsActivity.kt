@@ -42,16 +42,16 @@ class SecretSettingsActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                val phoneId = remember {
-                    getSharedPreferences("microvault", MODE_PRIVATE)
-                        .getInt("phone_id", -1)
-                }
+                val microPrefs = getSharedPreferences("microvault", MODE_PRIVATE)
+                var phoneId by remember { mutableStateOf(microPrefs.getInt("phone_id", -1)) }
                 var status by remember { mutableStateOf("Unknown") }
                 val apiService = remember { RecordingApiService(this@SecretSettingsActivity) }
 
                 // Periodically fetch status every second (suspend function)
-                LaunchedEffect(phoneId) {
+                LaunchedEffect(Unit) {
                     while (true) {
+                        // re-read phone_id each iteration in case it was created after login
+                        phoneId = microPrefs.getInt("phone_id", -1)
                         if (phoneId != -1) {
                             status = apiService.getStatus(phoneId) ?: "Unknown"
                             // Start/stop service based on status

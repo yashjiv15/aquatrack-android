@@ -13,7 +13,8 @@ data class LoginResponse(
     val access_token: String,
     val token_type: String,
     val user_id: Int,
-    val user_role: String
+    val user_role: String,
+    val name: String? = null // newly added name field
 )
 data class Product(
     val product_id: Int,
