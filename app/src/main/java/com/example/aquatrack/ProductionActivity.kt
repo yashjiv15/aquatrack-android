@@ -86,39 +86,38 @@ class ProductionActivity : AppCompatActivity() {
         val inflater = layoutInflater
         if (position == 0) {
             inflater.inflate(R.layout.layout_dispatch_tab, tabContainer, true)
-            val swipe = findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
+            val swipe = tabContainer.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
             swipe.setOnRefreshListener {
                 fetchDispatchData()
             }
             // re-bind dispatch views
-            orderSpinner = findViewById(R.id.spinnerOrder)
-            dispatchQuantityEditText = findViewById(R.id.editTextDispatchQuantity)
-            dispatchDateButton = findViewById(R.id.buttonSelectDispatchDate)
-            selectedDispatchDateText = findViewById(R.id.textSelectedDispatchDate)
-            submitDispatchButton = findViewById(R.id.buttonSubmitDispatch)
-            dispatchTotalText = findViewById(R.id.textDispatchTotal)
-            orderDetailsText = findViewById(R.id.textOrderDetails)
-            dispatchHistoryLayout = findViewById(R.id.layoutDispatchHistory)
-            val refreshOrdersButton = findViewById<ImageButton>(R.id.buttonRefreshOrders)
-            refreshOrdersButton?.setOnClickListener { fetchDispatchData() }
+            orderSpinner = tabContainer.findViewById(R.id.spinnerOrder)
+            dispatchDateButton = tabContainer.findViewById(R.id.buttonSelectDispatchDate)
+            selectedDispatchDateText = tabContainer.findViewById(R.id.textSelectedDispatchDate)
+            orderDetailsText = tabContainer.findViewById(R.id.textOrderDetails)
+            dispatchQuantityEditText = tabContainer.findViewById(R.id.editTextDispatchQuantity)
+
+            submitDispatchButton = tabContainer.findViewById(R.id.buttonSubmitDispatch)
+            dispatchTotalText = tabContainer.findViewById(R.id.textDispatchTotal)
+            dispatchHistoryLayout = tabContainer.findViewById(R.id.layoutDispatchHistory)
             setupOrderSpinner()
             dispatchDateButton.setOnClickListener { pickDate { date -> selectedDispatchDate = date; selectedDispatchDateText.text = dateDisplay(date) } }
             submitDispatchButton.setOnClickListener { submitDispatch() }
             // Fetch data for Dispatch tab
             fetchDispatchData()
-            swipe.isRefreshing = false
+            swipe?.isRefreshing = false
         } else {
             inflater.inflate(R.layout.layout_production_tab, tabContainer, true)
-            val swipe = findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
+            val swipe = tabContainer.findViewById<SwipeRefreshLayout>(R.id.swipeRefresh)
             swipe.setOnRefreshListener {
                 fetchProductionData()
             }
-            productSpinner = findViewById(R.id.spinnerProduct)
-            producedQuantityEditText = findViewById(R.id.editTextProducedQuantity)
-            productionDateButton = findViewById(R.id.buttonSelectDate)
-            selectedProductionDateText = findViewById(R.id.textSelectedDate)
-            submitProductionButton = findViewById(R.id.buttonSubmitProduction)
-            productionHistoryLayout = findViewById(R.id.layoutProductionHistory)
+            productSpinner = tabContainer.findViewById(R.id.spinnerProduct)
+            producedQuantityEditText = tabContainer.findViewById(R.id.editTextProducedQuantity)
+            productionDateButton = tabContainer.findViewById(R.id.buttonSelectDate)
+            selectedProductionDateText = tabContainer.findViewById(R.id.textSelectedDate)
+            submitProductionButton = tabContainer.findViewById(R.id.buttonSubmitProduction)
+            productionHistoryLayout = tabContainer.findViewById(R.id.layoutProductionHistory)
             if (products.isNotEmpty()) {
                 val display = mutableListOf("Select product...")
                 display.addAll(products.map { "${it.product_name} (${it.quantity_type})" })
@@ -133,7 +132,7 @@ class ProductionActivity : AppCompatActivity() {
             submitProductionButton.setOnClickListener { submitProduction() }
             // Fetch data for Production tab
             fetchProductionData()
-            swipe.isRefreshing = false
+            swipe?.isRefreshing = false
         }
     }
 

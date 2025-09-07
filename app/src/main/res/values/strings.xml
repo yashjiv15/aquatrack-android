@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Aquatrack</string>
+    <string name="order_details_placeholder">Order details will appear here.</string>
+    <string name="dispatch_total_placeholder">Dispatch Total: -</string>
+    <string name="dispatch_total">Dispatch Total: %1$s</string>
+    <string name="remaining_order_details">%1$s %2$s Remaining: %3$s %4$s</string>
+    <string name="no_date_selected">No date selected</string>
+    <string name="submit_dispatch">Submit Dispatch</string>
+    <string name="dispatch_history">Dispatch History</string>
+    <string name="select_date">Select Date</string>
+    <string name="dispatch_quantity_hint">Dispatch Quantity</string>
 </resources>

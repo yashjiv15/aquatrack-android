@@ -127,6 +127,7 @@ data class CreateSaleRequest(
     val product_id: Int,
     val sale_quantity: Int,
     val sales_amount: Double,
+    val created_by: Int,
     val created_at: String
 )
 data class CreateSaleResponse(
