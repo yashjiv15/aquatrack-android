@@ -39,7 +39,7 @@ class AccountActivity : AppCompatActivity() {
         setContentView(R.layout.activity_account)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.1.7:8000/api/")
+            .baseUrl("http://192.168.1.9:8000/api/")
             .client(OkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -103,7 +103,14 @@ class AccountActivity : AppCompatActivity() {
                 Toast.makeText(this, "All expense fields are required", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val request = CreateExpenseRequest(desc, amount, date)
+            // get logged in user id from shared prefs and include as created_by
+            val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
+            val createdBy = prefs.getInt("user_id", -1)
+            if (createdBy == -1) {
+                Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val request = CreateExpenseRequest(desc, amount, date, createdBy)
             apiService.createExpense(request).enqueue(object : Callback<CreateExpenseResponse> {
                 override fun onResponse(call: Call<CreateExpenseResponse>, response: Response<CreateExpenseResponse>) {
                     if (response.isSuccessful) {

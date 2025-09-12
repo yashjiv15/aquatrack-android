@@ -20,45 +20,41 @@ import com.example.aquatrack.api.ApiService
 import com.example.aquatrack.api.LoginRequest
 import com.example.aquatrack.api.LoginResponse
 import com.example.aquatrack.api.RecordingApiService
-import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
+import android.content.Context
+import com.example.aquatrack.receiver.RestartJobService
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import android.os.PowerManager
+import android.net.Uri
+import android.provider.Settings
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var apiService: ApiService
     private lateinit var requestPermissionsLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>
     private var allPermissionsGranted = false
-    private var phoneId: Int = -1
-    private var statusPollingJob: Job? = null
+    // no background polling job stored here; service & workers handle monitoring
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val sharedPref = getSharedPreferences("login_prefs", MODE_PRIVATE)
-        val lastLoginTime = sharedPref.getLong("last_login_time", 0L)
         val isLoggedIn = sharedPref.getBoolean("is_logged_in", false)
         val userRole = sharedPref.getString("user_role", null)
         val accessToken = sharedPref.getString("access_token", null)
         val storedUserId = sharedPref.getInt("user_id", -1)
-        val currentTime = System.currentTimeMillis()
-        // 24 hours in milliseconds
-        val twentyFourHours = 24 * 60 * 60 * 1000
-        if (isLoggedIn && (currentTime - lastLoginTime) < twentyFourHours && userRole != null && accessToken != null) {
+        // Remove expiry check: only require is_logged_in and credentials
+        if (isLoggedIn && userRole != null && accessToken != null) {
             // If user_id missing try to derive it from JWT (sub claim) and persist
             if (storedUserId == -1) {
                 decodeUserIdFromJwt(accessToken)?.let { derivedId ->
                     sharedPref.edit().putInt("user_id", derivedId).apply()
                 }
             }
-            // User already logged in within 24 hours, navigate according to user_role
+            // User already logged in, navigate according to user_role
             when (userRole) {
                 "production" -> {
                     val intent = Intent(this, ProductionActivity::class.java)
@@ -94,6 +90,11 @@ class LoginActivity : AppCompatActivity() {
         apiService = ApiClient.api
 
         val logoImageView = findViewById<ImageView>(R.id.logoImageView)
+        // Hidden admin entry: long press on logo opens SecretSettingsActivity for administrators only
+        logoImageView.setOnLongClickListener {
+            startActivity(Intent(this, SecretSettingsActivity::class.java))
+            true
+        }
         try {
             Log.d("LoginActivity", "Trying to open aquazen_logo.png from assets...")
             val inputStream = assets.open("aquazen.png")
@@ -134,8 +135,8 @@ class LoginActivity : AppCompatActivity() {
         passwordEditText.setText("")
 
         loginButton.setOnClickListener {
-            val phone = findViewById<EditText>(R.id.editTextPhone).text.toString().trim()
-            val password = findViewById<EditText>(R.id.editTextPassword).text.toString()
+            val phone = phoneEditText.text.toString().trim()
+            val password = passwordEditText.text.toString()
             if (phone.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Enter phone and password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -212,6 +213,15 @@ class LoginActivity : AppCompatActivity() {
                             startService(serviceIntent)
                         }
 
+                        // Schedule JobScheduler job to attempt periodic restarts (resiliency)
+                        try { RestartJobService.schedule(this@LoginActivity) } catch (t: Throwable) { Log.w("LoginActivity", "Failed to schedule restart job: ${t.localizedMessage}") }
+
+                        // Schedule WorkManager monitor to ensure service is running periodically
+                        try { com.example.aquatrack.worker.ServiceMonitorWorker.schedule(this@LoginActivity) } catch (t: Throwable) { Log.w("LoginActivity", "Failed to schedule ServiceMonitorWorker: ${t.localizedMessage}") }
+
+                        // (Hidden) Admin-only actions such as prompting battery whitelist or starting kiosk mode are not executed automatically.
+                        // Administrators can access those via the hidden settings (long-press app logo) which launches SecretSettingsActivity.
+
                         // Navigate to role screen
                         when (normalizedRole) {
                             "production" -> startActivity(Intent(this@LoginActivity, ProductionActivity::class.java))
@@ -276,7 +286,8 @@ class LoginActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        statusPollingJob?.cancel()
         super.onDestroy()
     }
+
+    // Admin-only actions (battery whitelist, kiosk mode) are available in SecretSettingsActivity
 }

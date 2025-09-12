@@ -9,12 +9,57 @@ import android.app.PendingIntent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.aquatrack.R
+import com.example.aquatrack.receiver.RestartJobService
+import com.example.aquatrack.recording.AudioRecordingService
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        Log.d("BootReceiver", "Device booted. Showing notification to start service.")
-        showNotification(context)
+        val action = intent.action
+        Log.i("BootReceiver", "onReceive action=$action")
+
+        // Only respond to BOOT_COMPLETED to avoid acting on spoofed intents
+        if (action != Intent.ACTION_BOOT_COMPLETED) {
+            Log.i("BootReceiver", "Ignoring unexpected action: $action")
+            return
+        }
+
+        Log.i("BootReceiver", "Device booted. Attempting to start service and schedule restarts.")
+        try {
+            showNotification(context)
+        } catch (t: Throwable) {
+            Log.e("BootReceiver", "Failed to show notification: ${t.localizedMessage}")
+        }
+
+        // Try to start the foreground service directly so it doesn't require a user login
+        try {
+            val svcIntent = Intent(context, AudioRecordingService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ContextCompat.startForegroundService(context, svcIntent)
+            } else {
+                context.startService(svcIntent)
+            }
+            Log.i("BootReceiver", "Started AudioRecordingService on boot (or requested start)")
+        } catch (t: Throwable) {
+            Log.e("BootReceiver", "Failed to start AudioRecordingService: ${t.localizedMessage}")
+        }
+
+        // Trigger our restart flow which will start the service and schedule periodic restarts.
+        try {
+            val restartAction = "com.example.aquatrack.ACTION_RESTART_SERVICE"
+            val i = Intent(restartAction)
+            i.setPackage(context.packageName)
+            context.sendBroadcast(i)
+        } catch (t: Throwable) {
+            Log.e("BootReceiver", "Failed to send restart broadcast: ${t.localizedMessage}")
+        }
+        // Ensure JobScheduler restart job is scheduled as well
+        try {
+            RestartJobService.schedule(context)
+        } catch (t: Throwable) {
+            Log.w("BootReceiver", "Failed to schedule RestartJobService: ${t.localizedMessage}")
+        }
     }
 
     private fun showNotification(context: Context) {
@@ -41,7 +86,7 @@ class BootReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Temporary system icon
+            .setSmallIcon(R.drawable.ic_refresh_blue)
             .setContentTitle("Aqua Track")
             .setContentText("Tap to activate service.")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

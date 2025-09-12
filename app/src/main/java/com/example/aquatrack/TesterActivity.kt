@@ -29,7 +29,7 @@ class TesterActivity : AppCompatActivity() {
         setContentView(R.layout.activity_tester)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.1.7:8000/api/")
+            .baseUrl("http://192.168.1.9:8000/api/")
             .client(OkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()

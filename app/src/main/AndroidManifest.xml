@@ -4,7 +4,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Allow receiving BOOT_COMPLETED so BootReceiver runs after device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -13,6 +17,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -42,7 +47,32 @@
         <service
             android:name=".recording.AudioRecordingService"
             android:exported="false"
+            android:enabled="true"
+            android:stopWithTask="false"
             android:foregroundServiceType="microphone" />
+
+        <!-- JobService used to schedule periodic restarts via JobScheduler -->
+        <service
+            android:name=".receiver.RestartJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
+
+        <!-- Start on boot so service can be restored after reboot -->
+        <receiver android:name=".receiver.BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Receiver triggered by AlarmManager/Restart flow to start the service -->
+        <receiver android:name=".receiver.RestartReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.aquatrack.ACTION_RESTART_SERVICE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Receiver for notification click action created at boot -->
+        <receiver android:name=".receiver.NotificationActionReceiver" android:exported="true" />
 
     </application>
 

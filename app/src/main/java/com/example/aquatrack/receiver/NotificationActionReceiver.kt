@@ -56,6 +56,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 notificationId = SERVICE_ERROR_NOTIFICATION_ID
             )
         }
+
+        Log.i("NotificationActionReceiver", "notification action received: ${intent.action}")
+        try {
+            val restartAction = "com.example.aquatrack.ACTION_RESTART_SERVICE"
+            val i = Intent(restartAction)
+            i.setPackage(context.packageName)
+            context.sendBroadcast(i)
+        } catch (t: Throwable) {
+            Log.e("NotificationActionReceiver", "failed to send restart broadcast: ${t.localizedMessage}")
+        }
     }
 
     companion object {

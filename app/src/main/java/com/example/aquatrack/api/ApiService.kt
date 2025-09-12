@@ -142,7 +142,8 @@ data class CreateSaleResponse(
 data class CreateExpenseRequest(
     val description: String,
     val amount: Double,
-    val created_at: String
+    val created_at: String,
+    val created_by: Int // added created_by to be sent with expense creation
 )
 data class CreateExpenseResponse(
     val expense_id: Int?,
