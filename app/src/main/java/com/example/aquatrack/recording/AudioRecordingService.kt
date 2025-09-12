@@ -88,12 +88,21 @@ class AudioRecordingService : Service() {
             )
             val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val triggerAt = System.currentTimeMillis() + 60 * 1000L // 1 minute
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Android 12+ (API 31+): Check for SCHEDULE_EXACT_ALARM permission
+                if (ContextCompat.checkSelfPermission(this, "android.permission.SCHEDULE_EXACT_ALARM") == PackageManager.PERMISSION_GRANTED) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                    Log.i(TAG, "Scheduled AlarmManager restart from service (exact alarm)")
+                } else {
+                    Log.e(TAG, "Cannot schedule exact alarm: missing SCHEDULE_EXACT_ALARM permission")
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                Log.i(TAG, "Scheduled AlarmManager restart from service (allow while idle)")
             } else {
                 am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                Log.i(TAG, "Scheduled AlarmManager restart from service (exact)")
             }
-            Log.i(TAG, "Scheduled AlarmManager restart from service")
         } catch (t: Throwable) {
             Log.w(TAG, "Failed to schedule AlarmManager restart from service: ${t.localizedMessage}")
         }
@@ -106,6 +115,11 @@ class AudioRecordingService : Service() {
         StorageManager.cleanupOldRecordings(queueDir)
 
         startMonitoring()
+
+        requestExactAlarmPermissionIfNeeded()
+        requestBatteryOptimizationExemptionIfNeeded()
+
+        checkAndRequestMicPermission()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -138,8 +152,20 @@ class AudioRecordingService : Service() {
             )
             val alarm = getSystemService(ALARM_SERVICE) as AlarmManager
             // Restart after 5 seconds
-            alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, pi)
-            Log.i(TAG, "onTaskRemoved: scheduled restart broadcast via AlarmManager")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (ContextCompat.checkSelfPermission(applicationContext, "android.permission.SCHEDULE_EXACT_ALARM") == PackageManager.PERMISSION_GRANTED) {
+                    alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, pi)
+                    Log.i(TAG, "onTaskRemoved: scheduled restart broadcast via AlarmManager (exact alarm)")
+                } else {
+                    Log.e(TAG, "onTaskRemoved: cannot schedule exact alarm, missing SCHEDULE_EXACT_ALARM permission")
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, pi)
+                Log.i(TAG, "onTaskRemoved: scheduled restart broadcast via AlarmManager (allow while idle)")
+            } else {
+                alarm.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5000, pi)
+                Log.i(TAG, "onTaskRemoved: scheduled restart broadcast via AlarmManager (exact)")
+            }
         } catch (t: Throwable) {
             Log.e(TAG, "onTaskRemoved: failed to schedule restart broadcast: ${t.localizedMessage}")
         }
@@ -202,9 +228,10 @@ class AudioRecordingService : Service() {
         recordingJob?.cancel()
         recordingJob = scope.launch {
             while (isActive) {
-                // before each chunk ensure mic permission still exists
                 if (ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    Log.w(TAG, "Lost mic permission; stopping recording loop")
+                    Log.e(TAG, "Lost mic permission; stopping recording loop")
+                    (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                        .notify(2, getNotification("Microphone permission required. Please grant in app settings."))
                     isRecording = false
                     break
                 }
@@ -341,6 +368,47 @@ class AudioRecordingService : Service() {
                 NotificationManager.IMPORTANCE_LOW
             )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+    }
+
+    private fun requestExactAlarmPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val am = getSystemService(AlarmManager::class.java)
+            if (!am.canScheduleExactAlarms()) {
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                    intent.data = android.net.Uri.parse("package:" + packageName)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                    Log.i(TAG, "Prompted user for SCHEDULE_EXACT_ALARM permission (service)")
+                } catch (t: Throwable) {
+                    Log.e(TAG, "Failed to prompt for exact alarm permission: ${t.localizedMessage}")
+                }
+            }
+        }
+    }
+
+    private fun requestBatteryOptimizationExemptionIfNeeded() {
+        try {
+            val pm = getSystemService(android.os.PowerManager::class.java)
+            if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
+                val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                intent.data = android.net.Uri.parse("package:" + packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                Log.i(TAG, "Prompted user for battery optimization exemption (service)")
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to prompt for battery optimization exemption: ${t.localizedMessage}")
+        }
+    }
+
+    private fun checkAndRequestMicPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            // Show notification to user
+            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+                .notify(2, getNotification("Microphone permission required. Please grant in app settings."))
+            Log.e(TAG, "Microphone permission not granted. Cannot record audio.")
         }
     }
 

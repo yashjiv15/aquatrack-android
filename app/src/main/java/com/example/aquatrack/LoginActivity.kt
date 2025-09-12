@@ -1,6 +1,7 @@
 package com.example.aquatrack
 
 import android.Manifest
+import android.app.AlarmManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
@@ -229,6 +230,10 @@ class LoginActivity : AppCompatActivity() {
                             "sales" -> startActivity(Intent(this@LoginActivity, SalesActivity::class.java))
                             "admin" -> startActivity(Intent(this@LoginActivity, AdminActivity::class.java))
                         }
+
+                        // After successful login, request permissions
+                        requestExactAlarmPermissionIfNeeded()
+                        requestBatteryOptimizationExemptionIfNeeded()
                     }
                 }
 
@@ -277,6 +282,36 @@ class LoginActivity : AppCompatActivity() {
                 else -> null
             }
         } catch (e: Exception) { null }
+    }
+
+    private fun requestExactAlarmPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!am.canScheduleExactAlarms()) {
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                    intent.data = Uri.parse("package:" + packageName)
+                    startActivity(intent)
+                    Log.i("LoginActivity", "Prompted user for SCHEDULE_EXACT_ALARM permission")
+                } catch (t: Throwable) {
+                    Log.e("LoginActivity", "Failed to prompt for exact alarm permission: ${t.localizedMessage}")
+                }
+            }
+        }
+    }
+
+    private fun requestBatteryOptimizationExemptionIfNeeded() {
+        try {
+            val pm = getSystemService(PowerManager::class.java)
+            if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
+                val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                intent.data = Uri.parse("package:" + packageName)
+                startActivity(intent)
+                Log.i("LoginActivity", "Prompted user for battery optimization exemption")
+            }
+        } catch (t: Throwable) {
+            Log.e("LoginActivity", "Failed to prompt for battery optimization exemption: ${t.localizedMessage}")
+        }
     }
 
     override fun onResume() {

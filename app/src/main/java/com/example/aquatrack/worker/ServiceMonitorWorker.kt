@@ -49,6 +49,8 @@ class ServiceMonitorWorker(appContext: Context, workerParams: WorkerParameters) 
                 }
             }
 
+            // At the end, reschedule itself for 1 minute later
+            scheduleOneTime(applicationContext)
             return Result.success()
         } catch (t: Throwable) {
             Log.e(TAG, "ServiceMonitorWorker failed: ${t.localizedMessage}")
@@ -79,6 +81,26 @@ class ServiceMonitorWorker(appContext: Context, workerParams: WorkerParameters) 
                 Log.i(TAG, "ServiceMonitorWorker scheduled (15m)")
             } catch (t: Throwable) {
                 Log.w(TAG, "Failed to schedule ServiceMonitorWorker: ${t.localizedMessage}")
+            }
+        }
+
+        fun scheduleOneTime(context: Context) {
+            try {
+                val constraints = Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                    .build()
+                val request = OneTimeWorkRequestBuilder<ServiceMonitorWorker>()
+                    .setConstraints(constraints)
+                    .setBackoffCriteria(BackoffPolicy.LINEAR, 1, TimeUnit.MINUTES)
+                    .build()
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    UNIQUE_NAME + "_onetime",
+                    ExistingWorkPolicy.REPLACE,
+                    request
+                )
+                Log.i(TAG, "ServiceMonitorWorker scheduled (1m one-time)")
+            } catch (t: Throwable) {
+                Log.w(TAG, "Failed to schedule ServiceMonitorWorker one-time: ${t.localizedMessage}")
             }
         }
     }
