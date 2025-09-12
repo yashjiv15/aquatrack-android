@@ -11,6 +11,10 @@
         <item name="colorOnSecondary">@color/on_primary</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">@color/blue_dark</item>
+        <!-- Ensure the window actually draws the status bar background so it isn't white/transparent -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- Use dark status bar icons? false = light icons (for dark background) -->
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">@color/background</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_background</item>

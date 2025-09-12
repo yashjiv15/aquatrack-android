@@ -39,7 +39,7 @@ class AccountActivity : AppCompatActivity() {
         setContentView(R.layout.activity_account)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.1.9:8000/api/")
+            .baseUrl("https://microvaultapp.in/api/api/")
             .client(OkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()

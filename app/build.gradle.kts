@@ -31,7 +31,7 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"https://microvaultapp.in/api/\"")
         }
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.9:8000/api/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://microvaultapp.in/api/api/\"")
         }
     }
     compileOptions {

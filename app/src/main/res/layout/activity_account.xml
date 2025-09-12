@@ -3,13 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
     android:background="@color/white">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbarAccount"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="?attr/actionBarSize"
+        android:fitsSystemWindows="true"
         android:background="@color/blue_primary"
         app:title="Aquatrack - Accounts"
         app:titleTextColor="@color/white"
