@@ -32,6 +32,10 @@ class AccountActivity : AppCompatActivity() {
     private lateinit var recyclerRecentDispatches: androidx.recyclerview.widget.RecyclerView
     private lateinit var dispatchAdapter: DispatchAdapter
     private var dispatches: MutableList<CreateDispatchResponse> = mutableListOf()
+    // Sales tab views
+    private lateinit var recyclerRecentSales: androidx.recyclerview.widget.RecyclerView
+    private lateinit var salesAdapter: SalesAdapter
+    private var sales: MutableList<RecentSaleItem> = mutableListOf()
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +43,7 @@ class AccountActivity : AppCompatActivity() {
         setContentView(R.layout.activity_account)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://192.168.1.7:8000/api/")
+            .baseUrl("https://microvaultapp.in/api/api/")
             .client(OkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -49,6 +53,7 @@ class AccountActivity : AppCompatActivity() {
         tabContainer = findViewById(R.id.tabContentContainerAccount)
         tabLayout.addTab(tabLayout.newTab().setText("Expenses"))
         tabLayout.addTab(tabLayout.newTab().setText("Dispatches"))
+        tabLayout.addTab(tabLayout.newTab().setText("Sales"))
         tabLayout.addOnTabSelectedListener(object: com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab) { inflateTab(tab.position) }
             override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab) {}
@@ -60,14 +65,22 @@ class AccountActivity : AppCompatActivity() {
     private fun inflateTab(position: Int) {
         tabContainer.removeAllViews()
         val inflater = layoutInflater
-        if (position == 0) {
-            inflater.inflate(R.layout.layout_expense_tab, tabContainer, true)
-            bindExpenseTabViews()
-            fetchRecentExpenses()
-        } else {
-            inflater.inflate(R.layout.item_view_dispatch, tabContainer, true)
-            bindDispatchTabViews()
-            fetchRecentDispatches()
+        when (position) {
+            0 -> {
+                inflater.inflate(R.layout.layout_expense_tab, tabContainer, true)
+                bindExpenseTabViews()
+                fetchRecentExpenses()
+            }
+            1 -> {
+                inflater.inflate(R.layout.item_view_dispatch, tabContainer, true)
+                bindDispatchTabViews()
+                fetchRecentDispatches()
+            }
+            2 -> {
+                inflater.inflate(R.layout.layout_sales_tab_account, tabContainer, true)
+                bindSalesTabViews()
+                fetchRecentSales()
+            }
         }
     }
 
@@ -140,6 +153,13 @@ class AccountActivity : AppCompatActivity() {
         recyclerRecentDispatches.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
     }
 
+    private fun bindSalesTabViews() {
+        recyclerRecentSales = tabContainer.findViewById(R.id.recyclerRecentSales)
+        salesAdapter = SalesAdapter(sales)
+        recyclerRecentSales.adapter = salesAdapter
+        recyclerRecentSales.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+    }
+
     private fun fetchRecentExpenses() {
         apiService.getRecentExpenses().enqueue(object : Callback<List<RecentExpenseItem>> {
             override fun onResponse(call: Call<List<RecentExpenseItem>>, response: Response<List<RecentExpenseItem>>) {
@@ -165,6 +185,19 @@ class AccountActivity : AppCompatActivity() {
             override fun onFailure(call: Call<List<CreateDispatchResponse>>, t: Throwable) {
                 Toast.makeText(this@AccountActivity, "Failed to load dispatches", Toast.LENGTH_SHORT).show()
             }
+        })
+    }
+
+    private fun fetchRecentSales() {
+        apiService.getSales(0, 100, false).enqueue(object : Callback<List<RecentSaleItem>> {
+            override fun onResponse(call: Call<List<RecentSaleItem>>, response: Response<List<RecentSaleItem>>) {
+                if (response.isSuccessful && response.body() != null) {
+                    sales.clear()
+                    sales.addAll(response.body()!!)
+                    salesAdapter.notifyDataSetChanged()
+                }
+            }
+            override fun onFailure(call: Call<List<RecentSaleItem>>, t: Throwable) {}
         })
     }
 }

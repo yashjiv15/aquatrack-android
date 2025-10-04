@@ -6,6 +6,16 @@
     android:orientation="vertical"
     android:background="@color/white">
 
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarProduction"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/blue_primary"
+        android:title="Aquatrack - Production"
+        android:titleTextColor="@color/white"
+        app:titleCentered="true"
+        app:popupTheme="@style/ThemeOverlay.Material3.Light" />
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
