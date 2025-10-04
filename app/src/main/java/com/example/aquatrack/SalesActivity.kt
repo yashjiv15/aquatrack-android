@@ -145,14 +145,31 @@ class SalesActivity : AppCompatActivity() {
     }
 
     private fun fetchSalesList() {
-        api.getSales().enqueue(object : Callback<List<RecentSaleItem>> {
+        val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
+        val userId = prefs.getInt("user_id", -1)
+        if (userId == -1) {
+            salesSwipe?.isRefreshing = false
+            salesHistoryLayout?.let { it.removeAllViews(); addSimpleText(it, "User not identified") }
+            return
+        }
+        api.getSalesByCreatedBy(userId).enqueue(object : Callback<List<RecentSaleItem>> {
             override fun onResponse(call: Call<List<RecentSaleItem>>, response: Response<List<RecentSaleItem>>) {
                 salesSwipe?.isRefreshing = false
                 if (response.isSuccessful && response.body() != null) {
-                    salesCache = response.body()!!
+                    // Sort sales by sale_id in descending order (higher ID = newer = top)
+                    salesCache = response.body()!!.sortedByDescending { it.sale_id }
                     salesHistoryLayout?.let { layout ->
                         layout.removeAllViews()
-                        if (salesCache.isEmpty()) addSimpleText(layout, "No sales yet") else salesCache.forEach { addSaleCard(layout, it) }
+                        if (salesCache.isEmpty()) {
+                            addSimpleText(layout, "No sales yet")
+                        } else {
+                            salesCache.forEach { sale ->
+                                // Add each sale card at the top
+                                val cardContainer = LinearLayout(this@SalesActivity)
+                                addSaleCard(cardContainer, sale)
+                                layout.addView(cardContainer, 0)
+                            }
+                        }
                     }
                 } else {
                     salesHistoryLayout?.let { it.removeAllViews(); addSimpleText(it, "Failed to load sales") }

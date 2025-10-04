@@ -15,7 +15,7 @@ import java.io.File
 
 class RecordingApiService(private val context: Context) {
     private val client = OkHttpClient()
-    private val serverUrl = "https://microvaultapp.in/api/api"
+    private val serverUrl = "http://192.168.1.7:8000/api"
 
     private val prefs by lazy {
         context.getSharedPreferences("upload_queue", Context.MODE_PRIVATE)

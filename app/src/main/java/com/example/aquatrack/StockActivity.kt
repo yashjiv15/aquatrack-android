@@ -42,7 +42,7 @@ class StockActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://microvaultapp.in/api/api/")
+            .baseUrl("http://192.168.1.7:8000/api/")
             .client(OkHttpClient())
             .addConverterFactory(GsonConverterFactory.create())
             .build()

@@ -247,6 +247,14 @@ interface ApiService {
         @Query("include_deleted") includeDeleted: Boolean = false
     ): Call<List<RecentSaleItem>>
 
+    @GET("sales/created_by")
+    fun getSalesByCreatedBy(
+        @Query("user_id") userId: Int,
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 100,
+        @Query("include_deleted") includeDeleted: Boolean = false
+    ): Call<List<RecentSaleItem>>
+
     @POST("orders")
     fun createOrder(@Body request: CreateOrderRequest): Call<Order>
 }
