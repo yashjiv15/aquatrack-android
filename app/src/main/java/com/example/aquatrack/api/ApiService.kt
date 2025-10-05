@@ -139,35 +139,62 @@ data class CreateSaleResponse(
     val created_at: String?,
     val product: Product? = null
 )
+
+// Order API data classes
+data class CreateOrderRequest(
+    val product_id: Int,
+    val order_quantity: Int,
+    val created_by: String // Sending as string to match API requirement
+)
+
+data class CreateOrderResponse(
+    val product_id: Int,
+    val order_quantity: Int,
+    val order_id: Int,
+    val created_at: String?,
+    val created_by: String?,
+    val updated_at: String?,
+    val updated_by: Int?,
+    val is_deleted: Boolean?,
+    val product: Product,
+    val order_quantity_remaining: Int?
+)
+
+// Expense and Sale data classes
 data class CreateExpenseRequest(
     val description: String,
     val amount: Double,
     val created_at: String,
-    val created_by: Int // added created_by to be sent with expense creation
+    val created_by: Int
 )
+
 data class CreateExpenseResponse(
     val expense_id: Int?,
     val description: String?,
     val amount: Double?,
-    val created_at: String?
+    val created_at: String?,
+    val created_by: Int?
 )
+
 data class RecentExpenseItem(
     val expense_id: Int,
     val description: String,
     val amount: Double,
-    val created_at: String?
+    val created_at: String?,
+    val created_by: Int?
 )
+
 data class RecentSaleItem(
     val sale_id: Int,
     val product_id: Int,
     val sale_quantity: Int,
     val sales_amount: Double,
     val created_at: String?,
+    val created_by: Int?,
+    val updated_at: String?,
+    val updated_by: Int?,
+    val is_deleted: Boolean?,
     val product: Product?
-)
-data class CreateOrderRequest(
-    val product_id: Int,
-    val order_quantity: Int
 )
 
 interface ApiService {
