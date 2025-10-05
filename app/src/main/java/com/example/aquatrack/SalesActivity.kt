@@ -312,9 +312,10 @@ class OrdersTabFragment : Fragment() {
     private var spinnerOrderProduct: Spinner? = null
     private var orderQtyEdit: EditText? = null
     private var submitOrderButton: Button? = null
-    private var pendingOrdersLayout: LinearLayout? = null
+    private var ordersListLayout: LinearLayout? = null
 
     // Cache
+    private var allOrdersCache: List<Order> = emptyList()
     private var pendingOrdersCache: List<Order> = emptyList()
 
     override fun onCreateView(
@@ -341,14 +342,14 @@ class OrdersTabFragment : Fragment() {
         spinnerOrderProduct = view.findViewById(R.id.spinnerOrderProduct)
         orderQtyEdit = view.findViewById(R.id.editTextOrderQuantity)
         submitOrderButton = view.findViewById(R.id.buttonSubmitOrder)
-        pendingOrdersLayout = view.findViewById(R.id.layoutPendingOrders)
+        ordersListLayout = view.findViewById(R.id.layoutPendingOrders)
 
         submitOrderButton?.setOnClickListener { submitOrder() }
     }
 
     private fun refreshOrdersTab() {
         ordersSwipe?.isRefreshing = true
-        if (products.isEmpty()) fetchProducts(onComplete = { fetchPendingOrders() }) else fetchPendingOrders()
+        if (products.isEmpty()) fetchProducts(onComplete = { fetchAllOrders() }) else fetchAllOrders()
     }
 
     private fun fetchProducts(onComplete: (() -> Unit)? = null) {
@@ -364,7 +365,7 @@ class OrdersTabFragment : Fragment() {
             override fun onFailure(call: Call<List<Product>>, t: Throwable) {
                 onComplete?.invoke()
                 ordersSwipe?.isRefreshing = false
-                pendingOrdersLayout?.let { it.removeAllViews(); addSimpleText(it, "Failed to load products: ${t.localizedMessage}") }
+                ordersListLayout?.let { it.removeAllViews(); addSimpleText(it, "Failed to load products: ${t.localizedMessage}") }
             }
         })
     }
@@ -409,7 +410,7 @@ class OrdersTabFragment : Fragment() {
                     toast("Order created successfully")
                     orderQtyEdit?.text?.clear()
                     spinnerOrderProduct?.setSelection(0)
-                    fetchPendingOrders()
+                    fetchAllOrders()
                 } else {
                     toast("Failed to create order ${response.code()}")
                 }
@@ -423,43 +424,170 @@ class OrdersTabFragment : Fragment() {
         })
     }
 
-    private fun fetchPendingOrders() {
-        api.getPendingOrders().enqueue(object : Callback<List<Order>> {
-            override fun onResponse(call: Call<List<Order>>, response: Response<List<Order>>) {
+    private fun fetchAllOrders() {
+        // Get current user's ID from shared preferences for filtering
+        val prefs = requireContext().getSharedPreferences("login_prefs", android.content.Context.MODE_PRIVATE)
+        val currentUserId = prefs.getInt("user_id", -1)
+
+        if (currentUserId == -1) {
+            ordersSwipe?.isRefreshing = false
+            ordersListLayout?.let { it.removeAllViews(); addSimpleText(it, "User not identified") }
+            return
+        }
+
+        // Fetch both all orders and pending orders to properly categorize them
+        var allOrdersCompleted = false
+        var pendingOrdersCompleted = false
+
+        fun checkBothComplete() {
+            if (allOrdersCompleted && pendingOrdersCompleted) {
                 ordersSwipe?.isRefreshing = false
+                displayOrdersList()
+            }
+        }
+
+        // Fetch all orders for complete history
+        api.getAllOrders().enqueue(object : Callback<List<Order>> {
+            override fun onResponse(call: Call<List<Order>>, response: Response<List<Order>>) {
                 if (response.isSuccessful && response.body() != null) {
-                    // Sort orders by order_id in descending order (higher ID = newer = top)
-                    pendingOrdersCache = response.body()!!.sortedByDescending { it.order_id }
-                    pendingOrdersLayout?.let { layout ->
-                        layout.removeAllViews()
-                        if (pendingOrdersCache.isEmpty()) {
-                            addSimpleText(layout, "No pending orders")
-                        } else {
-                            pendingOrdersCache.forEach { order ->
-                                val cardContainer = LinearLayout(requireContext())
-                                addOrderCard(cardContainer, order)
-                                layout.addView(cardContainer) // Remove index 0 to maintain sorted order
-                            }
-                        }
-                    }
+                    // Filter orders by current user's ID and sort by order_id in descending order
+                    allOrdersCache = response.body()!!
+                        .filter { order -> order.created_by_id == currentUserId }
+                        .sortedByDescending { it.order_id }
                 } else {
-                    pendingOrdersLayout?.let { it.removeAllViews(); addSimpleText(it, "Failed to load pending orders") }
+                    allOrdersCache = emptyList()
                 }
+                allOrdersCompleted = true
+                checkBothComplete()
             }
 
             override fun onFailure(call: Call<List<Order>>, t: Throwable) {
-                ordersSwipe?.isRefreshing = false
-                pendingOrdersLayout?.let { it.removeAllViews(); addSimpleText(it, "Error: ${t.localizedMessage}") }
+                allOrdersCache = emptyList()
+                allOrdersCompleted = true
+                checkBothComplete()
+            }
+        })
+
+        // Fetch pending orders to get accurate remaining quantities
+        api.getPendingOrders().enqueue(object : Callback<List<Order>> {
+            override fun onResponse(call: Call<List<Order>>, response: Response<List<Order>>) {
+                if (response.isSuccessful && response.body() != null) {
+                    // Filter pending orders by current user's ID
+                    pendingOrdersCache = response.body()!!
+                        .filter { order -> order.created_by_id == currentUserId }
+                } else {
+                    pendingOrdersCache = emptyList()
+                }
+                pendingOrdersCompleted = true
+                checkBothComplete()
+            }
+
+            override fun onFailure(call: Call<List<Order>>, t: Throwable) {
+                pendingOrdersCache = emptyList()
+                pendingOrdersCompleted = true
+                checkBothComplete()
             }
         })
     }
 
-    private fun addOrderCard(container: LinearLayout, order: Order) {
+    private fun displayOrdersList() {
+        ordersListLayout?.let { layout ->
+            layout.removeAllViews()
+            if (allOrdersCache.isEmpty()) {
+                addSimpleText(layout, "No orders found")
+                return
+            }
+
+            // Create sets of pending order IDs for quick lookup
+            val pendingOrderIds = pendingOrdersCache.map { it.order_id }.toSet()
+
+            // Group orders by status using the pending orders lookup
+            val pendingOrders = mutableListOf<Order>()
+            val dispatchedOrders = mutableListOf<Order>()
+
+            allOrdersCache.forEach { order ->
+                if (pendingOrderIds.contains(order.order_id)) {
+                    // Find the corresponding pending order with proper remaining quantity
+                    val pendingOrder = pendingOrdersCache.find { it.order_id == order.order_id }
+                    if (pendingOrder != null) {
+                        pendingOrders.add(pendingOrder) // Use the pending order data with proper remaining qty
+                    } else {
+                        pendingOrders.add(order) // Fallback to original order
+                    }
+                } else {
+                    dispatchedOrders.add(order)
+                }
+            }
+
+            // Show Pending Orders Section first
+            if (pendingOrders.isNotEmpty()) {
+                addSectionHeader(layout, "Pending Orders (${pendingOrders.size})", "#FF9800") // Orange color
+                pendingOrders.forEach { order ->
+                    val cardContainer = LinearLayout(requireContext())
+                    cardContainer.orientation = LinearLayout.VERTICAL
+                    addOrderCard(cardContainer, order, "PENDING")
+                    layout.addView(cardContainer)
+                }
+            }
+
+            // Show Dispatched Orders Section
+            if (dispatchedOrders.isNotEmpty()) {
+                addSectionHeader(layout, "Dispatched Orders (${dispatchedOrders.size})", "#4CAF50") // Green color
+                dispatchedOrders.forEach { order ->
+                    val cardContainer = LinearLayout(requireContext())
+                    cardContainer.orientation = LinearLayout.VERTICAL
+                    addOrderCard(cardContainer, order, "DISPATCHED")
+                    layout.addView(cardContainer)
+                }
+            }
+        }
+    }
+
+    private fun addSectionHeader(container: LinearLayout, title: String, color: String) {
+        val headerCard = MaterialCardView(requireContext())
+        headerCard.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            bottomMargin = 8
+            topMargin = if (container.childCount > 0) 16 else 0
+        }
+        headerCard.cardElevation = 2f
+        headerCard.radius = 8f
+        headerCard.setCardBackgroundColor(android.graphics.Color.parseColor(color))
+
+        val headerText = TextView(requireContext())
+        headerText.text = title
+        headerText.textSize = 16f
+        headerText.setTextColor(android.graphics.Color.WHITE)
+        headerText.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        headerText.setPadding(24, 16, 24, 16)
+
+        headerCard.addView(headerText)
+        container.addView(headerCard)
+    }
+
+    private fun addOrderCard(container: LinearLayout, order: Order, status: String) {
         val productName = order.product.product_name
         val date = formatDisplayDate(order.created_at)
-        val remaining = order.order_quantity_remaining ?: order.order_quantity
-        val body = "$date\n$productName | Ordered: ${order.order_quantity} | Remaining: $remaining\nCreated by: ${order.created_by ?: "Unknown"}"
-        addCard(container, body)
+        val remaining = order.order_quantity_remaining ?: 0
+        val dispatched = if (order.order_quantity_remaining == null) {
+            order.order_quantity // If null, assume fully dispatched
+        } else {
+            order.order_quantity - remaining
+        }
+
+        val statusColor = if (status == "PENDING") "#FF9800" else "#4CAF50" // Orange for pending, Green for dispatched
+        val statusIcon = if (status == "PENDING") "⏳" else "✅"
+
+        val body = "$statusIcon $status\n" +
+                   "$date\n" +
+                   "$productName\n" +
+                   "Ordered: ${order.order_quantity} | Dispatched: $dispatched" +
+                   if (status == "PENDING") " | Remaining: $remaining" else "" +
+                   "\nCreated by: ${order.created_by ?: "Unknown"}"
+
+        addCard(container, body, statusColor)
     }
 
     private fun addSimpleText(container: LinearLayout, msg: String) {
@@ -469,19 +597,26 @@ class OrdersTabFragment : Fragment() {
         container.addView(tv)
     }
 
-    private fun addCard(container: LinearLayout, body: String) {
+    private fun addCard(container: LinearLayout, body: String, statusColor: String? = null) {
         val card = MaterialCardView(requireContext())
         card.layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { bottomMargin = 16 }
+        ).apply { bottomMargin = 12 }
         card.cardElevation = 4f
         card.radius = 16f
-        card.setContentPadding(24, 24, 24, 24)
+        card.setContentPadding(24, 20, 24, 20)
+
+        // Add status border color if provided
+        if (statusColor != null) {
+            card.strokeColor = android.graphics.Color.parseColor(statusColor)
+            card.strokeWidth = 3
+        }
 
         val tv = TextView(requireContext())
         tv.text = body
         tv.textSize = 14f
+        tv.setLineSpacing(4f, 1f) // Add line spacing for better readability
         card.addView(tv)
         container.addView(card)
     }

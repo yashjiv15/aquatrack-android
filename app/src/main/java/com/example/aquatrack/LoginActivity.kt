@@ -176,6 +176,7 @@ class LoginActivity : AppCompatActivity() {
                         .putString("user_role", normalizedRole)
                         .putString("access_token", loginResponse.access_token)
                         .putInt("user_id", loginResponse.user_id)
+                        .putString("name", loginResponse.name ?: "") // Save user's name
                         .apply()
 
                     // Ensure phone registration uses server-provided name and completes before starting the audio service

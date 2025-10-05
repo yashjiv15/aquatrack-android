@@ -34,6 +34,7 @@ data class Order(
     val order_id: Int,
     val created_at: String?,
     val created_by: String?, // changed from Int? to String? to accept name
+    val created_by_id: Int?, // Add created_by_id field for filtering
     val updated_at: String?,
     val updated_by: String?, // changed from Int? to String?
     val is_deleted: Boolean?,
@@ -200,6 +201,13 @@ data class RecentSaleItem(
 interface ApiService {
     @POST("auth/login")
     fun login(@Body request: LoginRequest): Call<LoginResponse>
+
+    @GET("all_orders")
+    fun getAllOrders(
+        @Query("skip") skip: Int = 0,
+        @Query("limit") limit: Int = 100,
+        @Query("include_deleted") includeDeleted: Boolean = false
+    ): Call<List<Order>>
 
     @GET("orders/pending")
     fun getPendingOrders(
